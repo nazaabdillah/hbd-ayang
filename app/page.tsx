@@ -5,16 +5,17 @@ import Countdown from "@/components/Countdown";
 import { motion, useScroll } from "framer-motion";
 import { Heart, Camera, Stars } from "lucide-react"; 
 import Cake from "@/components/Cake"; 
+import WishModal from "@/components/WishModal";
 
 // --- MOCK DATA FOTO (Pastikan nama file di folder public/images sesuai ya!) ---
 const PHOTOS = {
   childhood: "/images/foto-kecil.jpeg",   
   current: "/images/foto-sekarang.jpg",  
   couple: [                              
-    "/images/kita1.JPG",
+    "/images/kita1.jpg",
     "/images/kita2.jpg",
     "/images/kita3.jpg",
-    "/images/kita4.JPG", 
+    "/images/kita4.jpg", 
   ]
 };
 
@@ -57,6 +58,7 @@ export default function Home() {
            <JourneyContent />
         </div>
       )}
+      <WishModal />
     </main>
   );
 }
