@@ -4,21 +4,33 @@
 
 :root {
   --foreground-rgb: 255, 255, 255;
-  --background-start-rgb: 0, 0, 0;
-  --background-end-rgb: 0, 0, 0;
-  background-color: #050505;
-}
-html, body {
-  background-color: #050505; /* Paksa hitam pekat */
-  color: white;
-  overflow-x: hidden; /* Biar gak bisa digeser ke samping */
+  /* Kita hapus background-start/end rgb bawaan nextjs yang tidak terpakai */
 }
 
-body {
-  color: rgb(var(--foreground-rgb));
-  background: black;
-  font-family: 'Times New Roman', serif; /* Biar kerasa classy & romantis */
+/* === LAYER 1: HTML (PALING BELAKANG) === */
+/* Ini benteng terakhir pertahanan biar gak muncul putih */
+html {
+  background-color: #050505; 
+  height: 100%;
 }
+
+/* === LAYER 2: BODY === */
+body {
+  background-color: #050505; /* Wajib sama persis dengan html */
+  color: rgb(var(--foreground-rgb));
+  
+  /* Font Romantis Pilihanmu */
+  font-family: 'Times New Roman', serif; 
+  
+  /* PENTING: Paksa body minimal setinggi layar HP */
+  min-height: 100dvh; 
+  width: 100%;
+  overflow-x: hidden; 
+  position: relative; /* Biar elemen absolute patokannya jelas */
+}
+
+/* === UTILITIES MOBILE === */
 * {
   -webkit-tap-highlight-color: transparent;
+  box-sizing: border-box;
 }
