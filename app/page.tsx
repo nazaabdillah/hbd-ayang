@@ -2,19 +2,19 @@
 
 import { useState, useRef } from "react";
 import Countdown from "@/components/Countdown";
-import { motion, useScroll, useTransform } from "framer-motion";
+import { motion, useScroll } from "framer-motion";
 import { Heart, Camera, Stars } from "lucide-react"; 
 import Cake from "@/components/Cake"; 
 
-// --- MOCK DATA FOTO (Ganti path-nya nanti ya!) ---
+// --- MOCK DATA FOTO (Pastikan nama file di folder public/images sesuai ya!) ---
 const PHOTOS = {
-  childhood: "/images/foto-kecil.jpeg",   // Foto SMP dia
-  current: "/images/foto-sekarang.jpg",  // Foto dia yang cantik sekarang
-  couple: [                              // Foto berdua (Minimal 3 atau 4)
+  childhood: "/images/foto-kecil.jpeg",   
+  current: "/images/foto-sekarang.jpg",  
+  couple: [                              
     "/images/kita1.jpg",
     "/images/kita2.jpg",
     "/images/kita3.jpg",
-    "/images/kita4.JPG", 
+    "/images/kita4.jpg", 
   ]
 };
 
@@ -34,6 +34,7 @@ export default function Home() {
 
   const handleUnlock = () => {
     setIsUnlocked(true);
+    // Auto-play music saat unlock (dengan volume agak kecil biar enak)
     if (audioRef.current) {
       audioRef.current.volume = 0.6;
       audioRef.current.play().catch((e) => console.log("Auto-play failed:", e));
@@ -42,13 +43,17 @@ export default function Home() {
 
   return (
     <main className="min-h-screen bg-[#050505] overflow-x-hidden font-sans text-white selection:bg-pink-500 selection:text-white">
+      {/* SOURCE AUDIO */}
       <audio ref={audioRef} src="/lagu.mp3" loop />
 
       {!isUnlocked ? (
         <Countdown onUnlock={handleUnlock} onToggleMusic={toggleMusic} />
       ) : (
         <div className="relative w-full animate-fade-in">
+           {/* Background Particles Hati */}
            <GlowingHearts />
+           
+           {/* Konten Utama */}
            <JourneyContent />
         </div>
       )}
@@ -57,7 +62,7 @@ export default function Home() {
 }
 
 // ==============================================
-//       KOMPONEN KONTEN UTAMA
+//       KOMPONEN KONTEN UTAMA (JOURNEY)
 // ==============================================
 
 function JourneyContent() {
@@ -101,7 +106,7 @@ function JourneyContent() {
 
             {/* === 2. TRANSFORMATION (KECIL VS SEKARANG) === */}
             
-            {/* Foto Waktu Kecil (SMP) */}
+            {/* Foto Waktu Kecil */}
             <SectionLayout>
                 <Polaroid 
                    src={PHOTOS.childhood} 
@@ -201,7 +206,7 @@ function SectionLayout({ children, align = "left" }: { children: React.ReactNode
     );
 }
 
-// 2. Polaroid
+// 2. Polaroid (FIXED IMAGE ASPECT RATIO)
 function Polaroid({ src, caption, rotate }: { src: string, caption: string, rotate: number }) {
     return (
         <motion.div 
@@ -212,14 +217,23 @@ function Polaroid({ src, caption, rotate }: { src: string, caption: string, rota
             whileHover={{ scale: 1.05, rotate: 0, zIndex: 10 }}
             className="group relative bg-white p-3 pb-12 shadow-2xl rounded-sm w-64 md:w-80 cursor-pointer"
         >
+            {/* CONTAINER FOTO (Relative + Aspect Ratio) */}
             <div className="aspect-[3/4] overflow-hidden bg-gray-100 mb-4 relative filter sepia-[20%] group-hover:sepia-0 transition-all duration-500">
-                <img src={src} alt={caption} className="w-full h-full object-cover" />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
+                {/* FOTO (Absolute + Cover + Inset-0) -> Anti Gepeng */}
+                <img 
+                    src={src} 
+                    alt={caption} 
+                    className="absolute inset-0 w-full h-full object-cover" 
+                />
+                
+                {/* Overlay Effect */}
+                <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none"></div>
             </div>
+
             <p className="font-handwriting text-gray-800 text-center text-xl absolute bottom-4 left-0 right-0">
                 {caption}
             </p>
-            {/* Washi Tape Effect */}
+            {/* Washi Tape Decoration */}
             <div className={`absolute -top-3 left-1/2 -translate-x-1/2 w-24 h-8 bg-pink-500/20 backdrop-blur-sm shadow-sm rotate-${rotate * -1}`}></div>
         </motion.div>
     );
@@ -247,9 +261,9 @@ function TextBox({ children, title, align = "left" }: { children: React.ReactNod
     );
 }
 
-// 4. Gallery Item (New Feature)
+// 4. Gallery Item (FIXED IMAGE ASPECT RATIO)
 function GalleryItem({ src, index }: { src: string, index: number }) {
-    // Pola grid biar selang seling (ada yang miring kiri, miring kanan)
+    // Pola grid biar selang seling miringnya
     const rotate = index % 2 === 0 ? 2 : -2;
     
     return (
@@ -259,19 +273,25 @@ function GalleryItem({ src, index }: { src: string, index: number }) {
             viewport={{ once: true, margin: "-50px" }}
             transition={{ delay: index * 0.1, duration: 0.6 }}
             whileHover={{ scale: 1.02, rotate: 0, zIndex: 20 }}
-            className={`relative aspect-square overflow-hidden rounded-2xl border-4 border-white/10 shadow-2xl bg-gray-800 transform rotate-${rotate} hover:border-pink-500/50 transition-all duration-300`}
+            // Container (Relative + Aspect Square)
+            className={`relative aspect-square overflow-hidden rounded-2xl border-4 border-white/10 shadow-2xl bg-gray-800 transform rotate-${rotate} hover:border-pink-500/50 transition-all duration-300 group`}
         >
-            <img src={src} alt="Us" className="w-full h-full object-cover hover:scale-110 transition-transform duration-700" />
+            {/* FOTO (Absolute + Cover + Inset-0) -> Anti Gepeng */}
+            <img 
+                src={src} 
+                alt="Us" 
+                className="absolute inset-0 w-full h-full object-cover hover:scale-110 transition-transform duration-700" 
+            />
             
             {/* Overlay Icon Camera */}
-            <div className="absolute top-4 right-4 bg-black/50 p-2 rounded-full backdrop-blur-sm opacity-0 group-hover:opacity-100 transition-opacity">
+            <div className="absolute top-4 right-4 bg-black/50 p-2 rounded-full backdrop-blur-sm opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
                 <Camera className="w-4 h-4 text-white" />
             </div>
         </motion.div>
     );
 }
 
-// 5. Background Hearts
+// 5. Background Hearts Animation
 function GlowingHearts() {
     return (
         <div className="fixed inset-0 pointer-events-none z-0 overflow-hidden">
