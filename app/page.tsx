@@ -11,10 +11,10 @@ const PHOTOS = {
   childhood: "/images/foto-kecil.jpeg",   
   current: "/images/foto-sekarang.jpg",  
   couple: [                              
-    "/images/kita1.jpg",
+    "/images/kita1.JPG",
     "/images/kita2.jpg",
     "/images/kita3.jpg",
-    "/images/kita4.jpg", 
+    "/images/kita4.JPG", 
   ]
 };
 
