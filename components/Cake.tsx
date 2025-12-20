@@ -8,7 +8,7 @@ export default function Cake() {
   const [isBlown, setIsBlown] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
 
-  // Cek apakah user pakai HP atau Laptop
+  // Cek Device
   useEffect(() => {
     const checkMobile = () => setIsMobile(window.innerWidth < 768);
     checkMobile();
@@ -21,9 +21,8 @@ export default function Cake() {
 
     setIsBlown(true);
 
-    // === LOGIC MERIAH ===
+    // === 1. LOGIC LAPTOP (Pakai Library Canvas) ===
     if (!isMobile) {
-        // --- JIKA LAPTOP: Pakai Canvas Confetti (Yang Lama) ---
         const duration = 15 * 1000;
         const animationEnd = Date.now() + duration;
         const defaults = { startVelocity: 30, spread: 360, ticks: 60, zIndex: 50 };
@@ -37,7 +36,8 @@ export default function Cake() {
           confetti({ ...defaults, particleCount, origin: { x: randomInRange(0.7, 0.9), y: Math.random() - 0.2 } });
         }, 250);
     } 
-    // JIKA HP: Kita pakai komponen <MobileConfetti /> di bawah (Render CSS)
+    // === 2. LOGIC HP (Pakai Komponen Manual di bawah) ===
+    // Tidak perlu koding apa-apa disini, karena dirender di JSX
   };
 
   return (
@@ -56,8 +56,8 @@ export default function Cake() {
         className="relative cursor-pointer group" 
         onClick={handleBlow}
       >
-        {/* JIKA HP & DITIUP -> MUNCULKAN PARTIKEL CSS (PENGGANTI CONFETTI) */}
-        {isBlown && isMobile && <MobileConfetti />}
+        {/* 🔥 CONFETTI MANUAL KHUSUS HP (MERIAH BANGET) 🔥 */}
+        {isBlown && isMobile && <MobileExplosion />}
 
         {/* PIRING */}
         <div className="absolute -bottom-4 left-1/2 -translate-x-1/2 w-72 h-24 bg-white/90 rounded-[50%] shadow-2xl blur-[1px]"></div>
@@ -113,7 +113,7 @@ export default function Cake() {
         )}
       </div>
 
-      {/* === SURAT CINTA === */}
+      {/* SURAT CINTA */}
       {isBlown && (
           <motion.div 
             initial={{ opacity: 0, scale: 0.8, y: 50 }}
@@ -145,37 +145,69 @@ export default function Cake() {
   );
 }
 
-// === KOMPONEN BARU: KHUSUS HP (RINGAN) ===
-function MobileConfetti() {
-    const colors = ["#ff0000", "#00ff00", "#0000ff", "#ffff00", "#ff00ff", "#00ffff"];
+// ============================================
+// KOMPONEN RAHASIA: HIGH FIDELITY MOBILE CONFETTI
+// Ini meniru library, tapi pakai CSS murni (Anti Blank Putih)
+// ============================================
+function MobileExplosion() {
+    // Warna-warni confetti ala library
+    const colors = ["#26ccff", "#a25afd", "#ff5e7e", "#88ff5a", "#fcff42", "#ffa62d", "#ff36ff"];
     
-    // Kita bikin 50 butir confetti manual pakai CSS
+    // Kita generate 80 partikel biar RAME
     return (
-        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full h-full pointer-events-none z-50">
-            {[...Array(50)].map((_, i) => {
-                // Posisi acak ledakan
-                const randomX = Math.random() * 400 - 200; // Sebar ke kiri kanan
-                const randomY = Math.random() * -300 - 50; // Sebar ke atas
-                const randomRotate = Math.random() * 360;
-                const randomColor = colors[Math.floor(Math.random() * colors.length)];
+        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full h-[150vh] pointer-events-none z-50 overflow-hidden">
+            {[...Array(80)].map((_, i) => {
+                // PHYSICS SIMULATION (Randomize)
+                // 1. Posisi X: Menyebar ke kiri (-200) dan kanan (200)
+                const x = Math.random() * 400 - 200; 
                 
+                // 2. Posisi Y: Meledak ke atas (-300) lalu jatuh ke bawah
+                // Kita akali pake animasi 'y' di framer motion
+                const yInitial = Math.random() * -150 - 50; // Naik
+                const yFinal = Math.random() * 400 + 200;   // Jatuh
+                
+                // 3. Rotasi: Biar kayak kertas jatuh (3D effect)
+                const rotate = Math.random() * 360;
+                
+                // 4. Ukuran: Random biar natural
+                const size = Math.random() * 8 + 4;
+                
+                // 5. Warna
+                const color = colors[Math.floor(Math.random() * colors.length)];
+                
+                // 6. Bentuk: Ada kotak, ada persegi panjang
+                const isCircle = Math.random() > 0.8; // 20% kemungkinan jadi bulat
+
                 return (
                     <motion.div
                         key={i}
-                        initial={{ x: 0, y: 0, scale: 0, opacity: 1 }}
+                        initial={{ 
+                            x: 0, 
+                            y: 0, 
+                            scale: 0,
+                            rotate: 0 
+                        }}
                         animate={{ 
-                            x: randomX, 
-                            y: randomY, 
-                            rotate: randomRotate, 
-                            opacity: 0 
+                            x: x, 
+                            y: [yInitial, yFinal], // Keyframes: Naik dulu, baru jatuh
+                            rotate: rotate + 360, // Muter terus
+                            opacity: [1, 1, 0],   // Hilang pelan-pelan di akhir
+                            scale: 1
                         }}
                         transition={{ 
-                            duration: 1.5, 
+                            duration: Math.random() * 2 + 1.5, // Durasi acak 1.5s - 3.5s
                             ease: "easeOut",
-                            delay: Math.random() * 0.2
+                            times: [0, 1] // Timing jatuhnya
                         }}
-                        className="absolute top-0 left-1/2 w-2 h-2 rounded-full"
-                        style={{ backgroundColor: randomColor }}
+                        style={{
+                            position: "absolute",
+                            top: "0",
+                            left: "50%",
+                            width: size,
+                            height: isCircle ? size : size * 0.6, // Kalau kotak agak gepeng
+                            backgroundColor: color,
+                            borderRadius: isCircle ? "50%" : "2px",
+                        }}
                     />
                 )
             })}

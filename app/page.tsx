@@ -14,7 +14,7 @@ const PHOTOS = {
     "/images/kita1.jpg",
     "/images/kita2.jpg",
     "/images/kita3.jpg",
-    "/images/kita4.jpg", 
+    "/images/kita4.JPG", 
   ]
 };
 
