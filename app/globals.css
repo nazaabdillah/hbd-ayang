@@ -6,10 +6,19 @@
   --foreground-rgb: 255, 255, 255;
   --background-start-rgb: 0, 0, 0;
   --background-end-rgb: 0, 0, 0;
+  background-color: #050505;
+}
+html, body {
+  background-color: #050505; /* Paksa hitam pekat */
+  color: white;
+  overflow-x: hidden; /* Biar gak bisa digeser ke samping */
 }
 
 body {
   color: rgb(var(--foreground-rgb));
   background: black;
   font-family: 'Times New Roman', serif; /* Biar kerasa classy & romantis */
+}
+* {
+  -webkit-tap-highlight-color: transparent;
 }
