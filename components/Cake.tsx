@@ -6,73 +6,69 @@ import { motion } from "framer-motion";
 
 export default function Cake() {
   const [isBlown, setIsBlown] = useState(false);
-  
-  // 1. KITA BIKIN REFERENSI KE CANVAS SENDIRI
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const confettiCtx = useRef<any>(null); // Simpan "pistol" confetti disini
+
+  // 1. SIAPKAN "PISTOL" CONFETTI SAAT WEBSITE DIBUKA
+  // Jadi pas diklik gak perlu loading lagi (Anti Blank Putih)
+  useEffect(() => {
+    if (canvasRef.current) {
+      confettiCtx.current = confetti.create(canvasRef.current, {
+        resize: true,
+        useWorker: true
+      });
+    }
+  }, []);
 
   const handleBlow = () => {
     if (isBlown) return;
 
     setIsBlown(true);
     
-    // 2. INISIALISASI CONFETTI KE CANVAS KITA (BUKAN KE BODY)
-    // Ini kuncinya biar gak blank putih di HP
-    const myConfetti = confetti.create(canvasRef.current!, {
-      resize: true, // Otomatis nyesuain ukuran layar HP
-      useWorker: true
-    });
-
     // === SETTINGAN CONFETTI ===
     const duration = 15 * 1000;
     const animationEnd = Date.now() + duration;
-    
-    const defaults = { 
-        startVelocity: 30, 
-        spread: 360, 
-        ticks: 60, 
-        zIndex: 50, // Layer di atas kue
-    };
+    const defaults = { startVelocity: 30, spread: 360, ticks: 60, zIndex: 50 };
 
     const randomInRange = (min: number, max: number) => Math.random() * (max - min) + min;
 
     const interval: any = setInterval(function() {
       const timeLeft = animationEnd - Date.now();
-      
-      // Stop interval kalau waktu habis
-      if (timeLeft <= 0) {
-        return clearInterval(interval);
-      }
+      if (timeLeft <= 0) return clearInterval(interval);
 
       const particleCount = 50 * (timeLeft / duration);
       
-      // Tembak confetti pakai instance 'myConfetti'
-      myConfetti({ 
-          ...defaults, 
-          particleCount, 
-          origin: { x: randomInRange(0.1, 0.3), y: Math.random() - 0.2 } 
-      });
-      myConfetti({ 
-          ...defaults, 
-          particleCount, 
-          origin: { x: randomInRange(0.7, 0.9), y: Math.random() - 0.2 } 
-      });
+      // TEMBAK! (Pakai pistol yang sudah disiapkan di useEffect)
+      if (confettiCtx.current) {
+        confettiCtx.current({ 
+            ...defaults, 
+            particleCount, 
+            origin: { x: randomInRange(0.1, 0.3), y: Math.random() - 0.2 } 
+        });
+        confettiCtx.current({ 
+            ...defaults, 
+            particleCount, 
+            origin: { x: randomInRange(0.7, 0.9), y: Math.random() - 0.2 } 
+        });
+      }
     }, 250);
   };
 
   return (
     <>
-      {/* 3. ELEMEN CANVAS MANUAL
-          Kita taruh fixed di layar, full screen, tapi pointer-events-none 
-          biar tetep bisa klik kue di bawahnya.
+      {/* CANVAS LAYOUT
+          - !bg-transparent: Paksa transparan (penting!)
+          - pointer-events-none: Biar tembus pandang kalo diklik
+          - z-[100]: Di atas segalanya
       */}
       <canvas
         ref={canvasRef}
-        className="fixed inset-0 w-full h-full pointer-events-none z-[100]"
+        className="fixed inset-0 w-full h-full pointer-events-none z-[100] !bg-transparent"
+        style={{ background: 'transparent' }} // Double protection
       />
 
       <div className="relative flex flex-col items-center justify-center pt-10 pb-20 z-10">
           
-        {/* INSTRUCTION TEXT */}
         <motion.p 
           animate={{ opacity: isBlown ? 0 : 1, y: isBlown ? -20 : 0 }}
           className="text-pink-200 mb-12 font-handwriting text-2xl tracking-widest text-center"
@@ -80,18 +76,17 @@ export default function Cake() {
           {isBlown ? "Yeay! Make a Wish!" : "Make a wish & tap the candle..."}
         </motion.p>
 
-        {/* === THE AESTHETIC CAKE === */}
+        {/* === KUE === */}
         <div 
           className="relative cursor-pointer group" 
           onClick={handleBlow}
         >
-          {/* 1. PIRING (Plate) */}
+          {/* PIRING */}
           <div className="absolute -bottom-4 left-1/2 -translate-x-1/2 w-72 h-24 bg-white/90 rounded-[50%] shadow-2xl blur-[1px]"></div>
           <div className="absolute -bottom-2 left-1/2 -translate-x-1/2 w-64 h-20 bg-gray-100 rounded-[50%] shadow-inner"></div>
 
-          {/* 2. BODY KUE (Layer Bawah) */}
+          {/* BODY KUE */}
           <div className="relative w-48 h-32 bg-pink-300 rounded-b-[40%] shadow-[inset_-10px_-10px_30px_rgba(0,0,0,0.1)] mx-auto z-10 transition-transform duration-300 group-hover:scale-105">
-              {/* CREAM DRIPS */}
               <div className="absolute top-0 w-full flex justify-center space-x-1">
                   <div className="w-4 h-8 bg-pink-200 rounded-b-full"></div>
                   <div className="w-4 h-5 bg-pink-200 rounded-b-full"></div>
@@ -105,22 +100,20 @@ export default function Cake() {
               </div>
           </div>
 
-          {/* 3. TOP KUE (Layer Atas - Oval) */}
+          {/* TOP KUE */}
           <div className="absolute -top-10 left-1/2 -translate-x-1/2 w-48 h-24 bg-pink-200 rounded-[50%] z-20 shadow-sm flex items-center justify-center transition-transform duration-300 group-hover:scale-105 group-hover:-translate-y-1">
-              {/* Hiasan Cherry */}
               <div className="absolute top-4 left-6 w-4 h-4 bg-red-400 rounded-full shadow-sm"></div>
               <div className="absolute top-2 right-10 w-4 h-4 bg-red-400 rounded-full shadow-sm"></div>
               <div className="absolute bottom-4 left-10 w-4 h-4 bg-red-400 rounded-full shadow-sm"></div>
-              {/* Tulisan */}
               <span className="text-white/50 font-handwriting text-sm rotate-[-5deg]">HBD Sayang</span>
           </div>
 
-          {/* 4. LILIN (Candle) */}
+          {/* LILIN */}
           <div className="absolute -top-16 left-1/2 -translate-x-1/2 w-3 h-16 bg-gradient-to-r from-yellow-100 to-white rounded-md z-30 shadow-md">
               <div className="w-full h-full bg-[repeating-linear-gradient(45deg,transparent,transparent_5px,rgba(255,182,193,0.5)_5px,rgba(255,182,193,0.5)_10px)] opacity-50"></div>
           </div>
 
-          {/* 5. API (FLAME) */}
+          {/* API */}
           {!isBlown && (
               <div className="absolute -top-24 left-1/2 -translate-x-1/2 z-40">
                   <div className="w-4 h-8 bg-orange-400 rounded-[50%] animate-bounce blur-[1px]"></div>
@@ -129,7 +122,7 @@ export default function Cake() {
               </div>
           )}
 
-          {/* 6. ASAP (Smoke) */}
+          {/* ASAP */}
           {isBlown && (
               <motion.div 
                   initial={{ opacity: 0, y: 0 }}
@@ -142,7 +135,7 @@ export default function Cake() {
           )}
         </div>
 
-        {/* === SURAT CINTA === */}
+        {/* SURAT CINTA */}
         {isBlown && (
             <motion.div 
               initial={{ opacity: 0, scale: 0.8, y: 50 }}
