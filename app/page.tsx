@@ -1,26 +1,28 @@
 "use client";
 
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import Countdown from "@/components/Countdown";
-import { motion, useScroll } from "framer-motion";
-import { Heart, Camera, Stars, Send, User, MessageSquare } from "lucide-react"; 
+import { motion, AnimatePresence } from "framer-motion";
+import { Heart, Stars, User, MessageSquare } from "lucide-react"; 
 import Cake from "@/components/Cake"; 
+import { supabase } from "@/lib/supabase";
 
-// --- MOCK DATA FOTO (Update jadi 5 Foto buat Bento Grid) ---
+// --- MOCK DATA FOTO ---
 const PHOTOS = {
   childhood: "/images/foto-kecil.jpg",   
   current: "/images/foto-sekarang.jpg",  
   couple: [                              
-    "/images/kita1.jpg", // Foto Utama (Paling Bagus)
+    "/images/kita1.jpg", 
     "/images/kita2.jpg",
     "/images/kita3.jpg",
     "/images/kita4.jpg",
-    "/images/kita5.jpg", // Tambahan foto ke-5
+    "/images/kita5.jpg", 
   ]
 };
 
 export default function Home() {
-  const [isUnlocked, setIsUnlocked] = useState(false);
+  const [isUnlocked, setIsUnlocked] = useState(false); // Status Countdown
+  const [isLoading, setIsLoading] = useState(false);   // Status Loading Screen
   const audioRef = useRef<HTMLAudioElement | null>(null);
 
   const toggleMusic = () => {
@@ -34,20 +36,51 @@ export default function Home() {
   };
 
   const handleUnlock = () => {
-    setIsUnlocked(true);
+    // 1. Mulai fase loading
+    setIsLoading(true);
+    
+    // 2. Nyalakan musik pelan-pelan (Fade In manual simple)
     if (audioRef.current) {
-      audioRef.current.volume = 0.6;
+      audioRef.current.volume = 0.4;
       audioRef.current.play().catch((e) => console.log("Auto-play failed:", e));
     }
+
+    // 3. Tahan selama 4 detik (Pre-loading simulation)
+    // Di waktu ini, komponen JourneyContent di bawah sebenernya udah di-mount
+    // jadi browser punya waktu buat download gambar di background.
+    setTimeout(() => {
+        setIsLoading(false); // Matikan loading
+        setIsUnlocked(true); // Munculkan konten full
+    }, 4000); 
   };
 
   return (
     <main className="min-h-screen bg-[#050505] overflow-x-hidden font-sans text-white selection:bg-pink-500 selection:text-white">
       <audio ref={audioRef} src="/lagu.mp3" loop />
 
-      {!isUnlocked ? (
-        <Countdown onUnlock={handleUnlock} onToggleMusic={toggleMusic} />
-      ) : (
+      <AnimatePresence mode="wait">
+        {/* PHASE 1: COUNTDOWN */}
+        {!isUnlocked && !isLoading && (
+          <motion.div key="countdown" exit={{ opacity: 0 }}>
+             <Countdown onUnlock={handleUnlock} onToggleMusic={toggleMusic} />
+          </motion.div>
+        )}
+
+        {/* PHASE 2: PRELOADER (BUFFERING CANTIK) */}
+        {isLoading && (
+           <motion.div key="preloader" exit={{ opacity: 0 }}>
+              <Preloader />
+           </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* PHASE 3: MAIN CONTENT */}
+      {/* Trik Optimalisasi: 
+         Kita render konten ini tapi disembunyikan (hidden) saat loading 
+         atau baru dimunculkan setelah 'isUnlocked' true.
+         Disini kita pakai logic: Konten muncul setelah loading selesai.
+      */}
+      {isUnlocked && (
         <div className="relative w-full animate-fade-in">
            <GlowingHearts />
            <JourneyContent />
@@ -58,12 +91,79 @@ export default function Home() {
 }
 
 // ==============================================
+//       KOMPONEN BARU: PRELOADER CANTIK
+// ==============================================
+function Preloader() {
+    // Teks berganti-ganti setiap detik
+    const [textIndex, setTextIndex] = useState(0);
+    const texts = [
+        "Menyiapkan kenangan...",  // Detik 1
+        "Menyalakan lilin...",     // Detik 2
+        "Menghias kue...",         // Detik 3
+        "Are you ready? ✨"        // Detik 4
+    ];
+
+    useEffect(() => {
+        const interval = setInterval(() => {
+            setTextIndex((prev) => (prev < texts.length - 1 ? prev + 1 : prev));
+        }, 1000);
+        return () => clearInterval(interval);
+    }, []);
+
+    return (
+        <div className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-[#050505]">
+            {/* Animasi Hati Berdetak */}
+            <motion.div
+                animate={{ scale: [1, 1.2, 1] }}
+                transition={{ repeat: Infinity, duration: 0.8 }}
+                className="mb-8"
+            >
+                <Heart className="w-16 h-16 text-pink-500 fill-pink-500 blur-sm" />
+            </motion.div>
+
+            {/* Teks Berjalan */}
+            <div className="h-8 overflow-hidden relative">
+                <AnimatePresence mode="wait">
+                    <motion.p
+                        key={textIndex}
+                        initial={{ y: 20, opacity: 0 }}
+                        animate={{ y: 0, opacity: 1 }}
+                        exit={{ y: -20, opacity: 0 }}
+                        transition={{ duration: 0.5 }}
+                        className="text-xl font-handwriting text-pink-200 tracking-widest"
+                    >
+                        {texts[textIndex]}
+                    </motion.p>
+                </AnimatePresence>
+            </div>
+
+            {/* Loading Bar Tipis */}
+            <div className="mt-8 w-48 h-1 bg-gray-800 rounded-full overflow-hidden">
+                <motion.div 
+                    initial={{ width: "0%" }}
+                    animate={{ width: "100%" }}
+                    transition={{ duration: 4, ease: "linear" }}
+                    className="h-full bg-gradient-to-r from-pink-500 to-purple-500"
+                />
+            </div>
+        </div>
+    );
+}
+
+// ==============================================
 //       KOMPONEN KONTEN UTAMA
 // ==============================================
 
+// Definisikan tipe data wish
+type Wish = {
+    id: number;
+    name: string;
+    message: string;
+    created_at: string;
+};
+
 function JourneyContent() {
     const containerRef = useRef(null);
-    // useScroll dihapus di section gallery biar ringan
     
     return (
         <div ref={containerRef} className="relative w-full overflow-hidden">
@@ -124,7 +224,7 @@ function JourneyContent() {
                  </TextBox>
             </SectionLayout>
 
-            {/* 4. THE CAKE (OPTIMIZED COMPACT) */}
+            {/* 4. THE CAKE */}
             <section className="min-h-[80vh] flex flex-col items-center justify-center relative z-20 py-20">
                  <div className="text-center mb-12 relative z-10">
                     <h2 className="text-5xl font-bold text-white mb-4 font-handwriting">Make a Wish</h2>
@@ -137,7 +237,7 @@ function JourneyContent() {
                  </div>
             </section>
 
-            {/* 5. COUPLE GALLERY (BENTO GRID - FIXED) */}
+            {/* 5. COUPLE GALLERY (BENTO GRID) */}
             <section className="relative z-10 px-4 py-20 max-w-5xl mx-auto">
                 <div className="text-center mb-12">
                     <span className="text-pink-500 text-sm font-bold tracking-widest uppercase mb-2 block">Chapter: Us</span>
@@ -145,47 +245,16 @@ function JourneyContent() {
                     <p className="text-gray-400 mt-4 text-sm md:text-base">Makasih udah bolehin aku nemenin hari-hari kamu.</p>
                 </div>
 
-                {/* BENTO GRID LAYOUT */}
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4 h-[500px] md:h-[600px]">
-                    
-                    {/* FOTO 1: UTAMA (Besar, Span 2x2) */}
-                    <BentoItem 
-                        src={PHOTOS.couple[0]} 
-                        className="col-span-2 row-span-2" 
-                        delay={0.1}
-                    />
-
-                    {/* FOTO 2 */}
-                    <BentoItem 
-                        src={PHOTOS.couple[1]} 
-                        className="col-span-1 row-span-1"
-                        delay={0.2} 
-                    />
-
-                    {/* FOTO 3 */}
-                    <BentoItem 
-                        src={PHOTOS.couple[2]} 
-                        className="col-span-1 row-span-1"
-                        delay={0.3} 
-                    />
-
-                    {/* FOTO 4 */}
-                    <BentoItem 
-                        src={PHOTOS.couple[3]} 
-                        className="col-span-1 row-span-1"
-                        delay={0.4} 
-                    />
-
-                    {/* FOTO 5 */}
-                    <BentoItem 
-                        src={PHOTOS.couple[4]} 
-                        className="col-span-1 row-span-1"
-                        delay={0.5} 
-                    />
+                    <BentoItem src={PHOTOS.couple[0]} className="col-span-2 row-span-2" delay={0.1}/>
+                    <BentoItem src={PHOTOS.couple[1]} className="col-span-1 row-span-1" delay={0.2} />
+                    <BentoItem src={PHOTOS.couple[2]} className="col-span-1 row-span-1" delay={0.3} />
+                    <BentoItem src={PHOTOS.couple[3]} className="col-span-1 row-span-1" delay={0.4} />
+                    <BentoItem src={PHOTOS.couple[4]} className="col-span-1 row-span-1" delay={0.5} />
                 </div>
             </section>
 
-            {/* 6. WISH FORM SECTION */}
+            {/* 6. WISH FORM SECTION (SUPABASE) */}
             <WishSection />
 
             {/* FOOTER */}
@@ -201,48 +270,55 @@ function JourneyContent() {
 }
 
 // ==============================================
-//          NEW COMPONENT: BENTO ITEM
+//          DYNAMIC WISH SECTION (SUPABASE)
 // ==============================================
-function BentoItem({ src, className, delay }: { src: string, className?: string, delay: number }) {
-    return (
-        <motion.div
-            initial={{ opacity: 0, scale: 0.9 }}
-            whileInView={{ opacity: 1, scale: 1 }}
-            viewport={{ once: true, margin: "-50px" }}
-            transition={{ duration: 0.5, delay: delay }}
-            className={`relative rounded-2xl overflow-hidden border border-white/10 group ${className}`}
-        >
-            {/* Foto Anti Gepeng */}
-            <img 
-                src={src || "/images/kita1.jpg"} // Fallback image
-                alt="Memory" 
-                className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" 
-            />
-            
-            {/* Overlay Gelap Dikit */}
-            <div className="absolute inset-0 bg-black/20 group-hover:bg-transparent transition-colors duration-300"></div>
-        </motion.div>
-    )
-}
-
-// ==============================================
-//          HELPER COMPONENTS (ASSETS)
-// ==============================================
-// (Dibawah ini sama seperti sebelumnya, cuma copas ulang biar rapi)
-
 function WishSection() {
     const [name, setName] = useState("");
     const [message, setMessage] = useState("");
+    const [wishes, setWishes] = useState<Wish[]>([]);
+    const [loading, setLoading] = useState(false);
     const [isFocused, setIsFocused] = useState<"name" | "message" | null>(null);
 
-    const phoneNumber = "628123456789";
+    // Fetch Data & Realtime
+    useEffect(() => {
+        const fetchWishes = async () => {
+            const { data } = await supabase
+                .from('wishes')
+                .select('*')
+                .order('created_at', { ascending: false });
+            
+            if (data) setWishes(data);
+        };
 
-    const handleSend = (e: React.FormEvent) => {
+        fetchWishes();
+
+        const channel = supabase
+            .channel('realtime-wishes')
+            .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'wishes' }, (payload) => {
+                setWishes((current) => [payload.new as Wish, ...current]);
+            })
+            .subscribe();
+
+        return () => {
+            supabase.removeChannel(channel);
+        };
+    }, []);
+
+    // Handle Send
+    const handleSend = async (e: React.FormEvent) => {
         e.preventDefault();
-        const text = `Hai Anis! 🎉%0A%0AAku ${name} mau ngucapin:%0A${message}%0A%0AHappy Birthday ya! 🎂`;
-        window.open(`https://wa.me/${phoneNumber}?text=${text}`, "_blank");
-        setName("");
-        setMessage("");
+        if (!name.trim() || !message.trim()) return;
+
+        setLoading(true);
+        const { error } = await supabase.from('wishes').insert([{ name, message }]);
+
+        if (error) {
+            alert("Gagal kirim. Coba lagi!");
+        } else {
+            setName("");
+            setMessage("");
+        }
+        setLoading(false);
     };
 
     return (
@@ -252,10 +328,10 @@ function WishSection() {
                     <span className="text-4xl">💌</span>
                 </motion.div>
                 <h2 className="text-3xl md:text-5xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-pink-300 via-purple-300 to-indigo-300 mb-4 font-handwriting">
-                    Drop a Sweet Message!
+                    Wish Wall
                 </h2>
                 <p className="text-gray-400 text-sm md:text-base max-w-xs mx-auto">
-                    Bikin hari ulang tahunnya makin berwarna dengan ucapan dari kamu.
+                    Kirimkan ucapan manismu. Pesanmu akan abadi di sini dan dibaca oleh Anis.
                 </p>
             </div>
 
@@ -263,43 +339,72 @@ function WishSection() {
                 initial={{ opacity: 0, y: 50 }}
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
-                transition={{ duration: 0.8 }}
-                className="relative group"
+                className="relative group mb-16"
             >
-                <div className="absolute -inset-1 bg-gradient-to-r from-pink-600 via-purple-600 to-pink-600 rounded-[2rem] blur opacity-75 group-hover:opacity-100 transition duration-1000 group-hover:duration-200 animate-tilt"></div>
-                <div className="relative bg-[#0a0a0a] ring-1 ring-white/10 rounded-[1.9rem] p-8 md:p-10 shadow-2xl">
+                <div className="absolute -inset-1 bg-gradient-to-r from-pink-600 via-purple-600 to-pink-600 rounded-[2rem] blur opacity-75 group-hover:opacity-100 transition duration-1000 animate-tilt"></div>
+                <div className="relative bg-[#0a0a0a] ring-1 ring-white/10 rounded-[1.9rem] p-8 shadow-2xl">
                     <form onSubmit={handleSend} className="space-y-6">
                         <div className="space-y-2">
-                            <label className={`text-xs font-bold uppercase tracking-widest ml-1 transition-colors duration-300 ${isFocused === 'name' ? 'text-pink-400' : 'text-gray-500'}`}>
-                                Dari Siapa Nih?
+                            <label className={`text-xs font-bold uppercase tracking-widest ml-1 ${isFocused === 'name' ? 'text-pink-400' : 'text-gray-500'}`}>
+                                Dari Siapa?
                             </label>
                             <div className="relative">
-                                <User className={`absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 transition-colors duration-300 ${isFocused === 'name' ? 'text-pink-500' : 'text-gray-600'}`} />
-                                <input type="text" required value={name} onChange={(e) => setName(e.target.value)} onFocus={() => setIsFocused("name")} onBlur={() => setIsFocused(null)} placeholder="Tulis nama kerenmu..." className="w-full bg-white/5 border border-white/10 rounded-2xl pl-12 pr-4 py-4 text-white placeholder:text-gray-600 focus:outline-none focus:bg-white/10 focus:ring-2 focus:ring-pink-500/50 transition-all" />
+                                <User className={`absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 ${isFocused === 'name' ? 'text-pink-500' : 'text-gray-600'}`} />
+                                <input type="text" required value={name} onChange={(e) => setName(e.target.value)} onFocus={() => setIsFocused("name")} onBlur={() => setIsFocused(null)} placeholder="Nama kamu..." className="w-full bg-white/5 border border-white/10 rounded-2xl pl-12 pr-4 py-4 text-white placeholder:text-gray-600 focus:outline-none focus:bg-white/10 focus:ring-2 focus:ring-pink-500/50 transition-all" />
                             </div>
                         </div>
+
                         <div className="space-y-2">
-                             <label className={`text-xs font-bold uppercase tracking-widest ml-1 transition-colors duration-300 ${isFocused === 'message' ? 'text-pink-400' : 'text-gray-500'}`}>
-                                Doa & Harapan
+                             <label className={`text-xs font-bold uppercase tracking-widest ml-1 ${isFocused === 'message' ? 'text-pink-400' : 'text-gray-500'}`}>
+                                Doa Terbaik
                             </label>
                             <div className="relative">
-                                <MessageSquare className={`absolute left-4 top-4 w-5 h-5 transition-colors duration-300 ${isFocused === 'message' ? 'text-pink-500' : 'text-gray-600'}`} />
-                                <textarea required value={message} onChange={(e) => setMessage(e.target.value)} onFocus={() => setIsFocused("message")} onBlur={() => setIsFocused(null)} rows={4} placeholder="Semoga panjang umur..." className="w-full bg-white/5 border border-white/10 rounded-2xl pl-12 pr-4 py-4 text-white placeholder:text-gray-600 focus:outline-none focus:bg-white/10 focus:ring-2 focus:ring-pink-500/50 transition-all resize-none" />
+                                <MessageSquare className={`absolute left-4 top-4 w-5 h-5 ${isFocused === 'message' ? 'text-pink-500' : 'text-gray-600'}`} />
+                                <textarea required value={message} onChange={(e) => setMessage(e.target.value)} onFocus={() => setIsFocused("message")} onBlur={() => setIsFocused(null)} rows={3} placeholder="Semoga..." className="w-full bg-white/5 border border-white/10 rounded-2xl pl-12 pr-4 py-4 text-white placeholder:text-gray-600 focus:outline-none focus:bg-white/10 focus:ring-2 focus:ring-pink-500/50 transition-all resize-none" />
                             </div>
                         </div>
-                        <motion.button whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }} type="submit" className="w-full relative overflow-hidden group bg-gradient-to-r from-pink-500 via-purple-500 to-pink-500 bg-[length:200%_auto] hover:bg-right transition-all duration-500 text-white font-bold py-5 rounded-2xl shadow-[0_0_30px_rgba(236,72,153,0.4)] flex items-center justify-center gap-3">
-                            <span className="relative z-10 text-lg tracking-wide">Kirim ke WhatsApp 🚀</span>
+
+                        <motion.button whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }} disabled={loading} type="submit" className="w-full bg-gradient-to-r from-pink-500 via-purple-500 to-pink-500 text-white font-bold py-5 rounded-2xl shadow-[0_0_30px_rgba(236,72,153,0.4)] flex items-center justify-center gap-3 disabled:opacity-50">
+                            {loading ? "Sending..." : "Kirim Ucapan 🚀"}
                         </motion.button>
-                        <div className="flex items-center justify-center gap-2 text-[10px] text-gray-500 mt-4 opacity-70">
-                            <span className="w-1 h-1 bg-green-500 rounded-full animate-pulse"></span>
-                            <span>Direct Message • Privacy Safe</span>
-                        </div>
                     </form>
                 </div>
             </motion.div>
+
+            <div className="space-y-4 max-h-[600px] overflow-y-auto custom-scrollbar px-2">
+                {wishes.length === 0 ? (
+                    <p className="text-center text-gray-500 text-sm italic">Belum ada ucapan. Jadilah yang pertama!</p>
+                ) : (
+                    wishes.map((wish) => (
+                        <motion.div key={wish.id} initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} className="bg-white/5 border border-white/10 p-5 rounded-2xl backdrop-blur-sm hover:bg-white/10 transition-colors">
+                            <div className="flex items-center gap-3 mb-2">
+                                <div className="w-8 h-8 rounded-full bg-gradient-to-tr from-pink-400 to-purple-400 flex items-center justify-center text-xs font-bold text-white uppercase">
+                                    {wish.name.charAt(0)}
+                                </div>
+                                <div>
+                                    <h4 className="font-bold text-pink-200 text-sm">{wish.name}</h4>
+                                    <p className="text-[10px] text-gray-500">
+                                        {new Date(wish.created_at).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}
+                                    </p>
+                                </div>
+                            </div>
+                            <p className="text-gray-300 text-sm leading-relaxed font-light">"{wish.message}"</p>
+                        </motion.div>
+                    ))
+                )}
+            </div>
+            
+            <div className="text-center mt-4">
+                 <div className="w-16 h-1 bg-white/10 rounded-full mx-auto"></div>
+            </div>
         </section>
     );
 }
+
+// ==============================================
+//          HELPER COMPONENTS (ASSETS)
+// ==============================================
+// (Helper komponen lain tetap sama, tidak berubah)
 
 function SectionLayout({ children, align = "left" }: { children: React.ReactNode, align?: "left" | "right" }) {
     return (
@@ -350,6 +455,21 @@ function TextBox({ children, title, align = "left" }: { children: React.ReactNod
             </div>
         </motion.div>
     );
+}
+
+function BentoItem({ src, className, delay }: { src: string, className?: string, delay: number }) {
+    return (
+        <motion.div
+            initial={{ opacity: 0, scale: 0.9 }}
+            whileInView={{ opacity: 1, scale: 1 }}
+            viewport={{ once: true, margin: "-50px" }}
+            transition={{ duration: 0.5, delay: delay }}
+            className={`relative rounded-2xl overflow-hidden border border-white/10 group ${className}`}
+        >
+            <img src={src || "/images/kita1.jpg"} alt="Memory" className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" />
+            <div className="absolute inset-0 bg-black/20 group-hover:bg-transparent transition-colors duration-300"></div>
+        </motion.div>
+    )
 }
 
 function GlowingHearts() {
