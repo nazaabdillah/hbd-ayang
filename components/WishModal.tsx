@@ -6,14 +6,12 @@ import { motion, AnimatePresence } from "framer-motion";
 
 export default function WishModal() {
   const [isOpen, setIsOpen] = useState(false);
-  const [showLabel, setShowLabel] = useState(false); // State untuk label petunjuk
+  const [showLabel, setShowLabel] = useState(false);
   const [name, setName] = useState("");
   const [message, setMessage] = useState("");
 
-  // GANTI NOMOR WA PACAR DISINI (Format: 628xxx)
-  const phoneNumber = "6283841742172"; 
+  const phoneNumber = "628123456789"; 
 
-  // Logic: Label muncul otomatis setelah 2 detik website dibuka
   useEffect(() => {
     const timer = setTimeout(() => {
       setShowLabel(true);
@@ -32,47 +30,54 @@ export default function WishModal() {
 
   return (
     <>
-      {/* WRAPPER UTAMA (Fixed di pojok kanan bawah) */}
-      <div className="fixed bottom-6 right-6 z-[9999] flex flex-col items-end gap-2 pointer-events-none">
+      {/* WRAPPER (Fixed Bottom Right) */}
+      <div className="fixed bottom-6 right-6 z-[9999] flex items-center justify-center pointer-events-none">
         
-        {/* 1. LABEL PETUNJUK (BUBBLE CHAT) */}
+        {/* 1. CURVED TEXT RING (TANPA BACKGROUND) */}
         <AnimatePresence>
           {showLabel && !isOpen && (
             <motion.div
-              initial={{ opacity: 0, y: 10, scale: 0.8 }}
-              animate={{ opacity: 1, y: 0, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.8 }}
-              transition={{ type: "spring", stiffness: 200, damping: 15 }}
-              className="relative mr-4 mb-2 pointer-events-auto"
+              initial={{ opacity: 0, scale: 0.5 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.5 }}
+              transition={{ duration: 0.5, delay: 0.2 }}
+              // Posisi absolute di tengah-tengah tombol
+              className="absolute w-32 h-32 flex items-center justify-center"
             >
-              {/* Box Putih */}
-              <div className="bg-white text-gray-800 px-4 py-3 rounded-2xl rounded-tr-none shadow-xl border border-pink-100 max-w-[150px] text-right">
-                <p className="text-xs font-handwriting font-bold text-pink-500 leading-tight">
-                   Kirim ucapan HBD ke Anis di sini! 👇
-                </p>
-              </div>
-
-              {/* Panah Lengkung (SVG Hand Drawn) */}
+              {/* SVG Berputar Pelan (Manual Animation di style biar gak ribet config) */}
               <svg 
-                className="absolute -bottom-8 -right-2 w-8 h-8 text-white drop-shadow-sm transform rotate-12"
                 viewBox="0 0 100 100" 
-                fill="none" 
-                stroke="currentColor" 
-                strokeWidth="8"
-                strokeLinecap="round"
+                className="w-full h-full"
+                style={{ animation: "spin 10s linear infinite" }}
               >
-                 {/* Gambar panah melengkung simpel */}
-                 <path d="M20,10 C40,40 60,60 80,80" className="text-white" strokeWidth="10" />
-                 <path d="M80,80 L60,85 M80,80 L75,60" className="text-white" strokeWidth="10" />
-                 {/* Layer warna pink biar cantik */}
-                 <path d="M20,10 C40,40 60,60 80,80" className="text-pink-400" />
-                 <path d="M80,80 L60,85 M80,80 L75,60" className="text-pink-400" />
+                <defs>
+                  {/* Jalur Lingkaran untuk Teks */}
+                  <path id="circlePath" d="M 50, 50 m -37, 0 a 37,37 0 1,1 74,0 a 37,37 0 1,1 -74,0" />
+                </defs>
+
+                {/* Teks Melengkung */}
+                <text fontSize="11.5" fontWeight="bold" letterSpacing="1.2">
+                  <textPath 
+                    href="#circlePath" 
+                    className="fill-white drop-shadow-md uppercase font-mono"
+                  >
+                    ✨ Kirim Ucapan Ulang Tahun Disini ✨
+                  </textPath>
+                </text>
               </svg>
+              
+              {/* Style untuk animasi putar (Inject langsung biar sat-set) */}
+              <style jsx>{`
+                @keyframes spin {
+                  from { transform: rotate(0deg); }
+                  to { transform: rotate(360deg); }
+                }
+              `}</style>
             </motion.div>
           )}
         </AnimatePresence>
 
-        {/* 2. TOMBOL FLOATING (Bulat) */}
+        {/* 2. TOMBOL FLOATING (TETAP SAMA) */}
         <motion.button
           initial={{ scale: 0 }}
           animate={{ scale: 1 }}
@@ -80,19 +85,17 @@ export default function WishModal() {
           whileTap={{ scale: 0.9 }}
           onClick={() => {
             setIsOpen(true);
-            setShowLabel(false); // Pas diklik, label hilang biar bersih
+            setShowLabel(false);
           }}
-          className="bg-gradient-to-tr from-pink-500 to-purple-500 text-white p-4 rounded-full shadow-[0_4px_20px_rgba(236,72,153,0.6)] border-4 border-white/20 flex items-center justify-center pointer-events-auto group relative overflow-hidden"
+          className="relative bg-gradient-to-tr from-pink-500 to-purple-500 text-white w-14 h-14 rounded-full shadow-[0_0_20px_rgba(236,72,153,0.6)] border-2 border-white flex items-center justify-center pointer-events-auto z-20"
         >
-          {/* Efek kilap melintas */}
-          <div className="absolute inset-0 bg-white/30 translate-y-full group-hover:translate-y-0 transition-transform duration-300 rounded-full"></div>
-          
-          <MessageCircle className="w-7 h-7 fill-white/20 animate-pulse" />
+          <div className="absolute inset-0 bg-white/20 rounded-full animate-pulse"></div>
+          <MessageCircle className="w-6 h-6 fill-white/20" />
         </motion.button>
 
       </div>
 
-      {/* 3. MODAL FORM (SAMA KAYAK SEBELUMNYA) */}
+      {/* 3. MODAL FORM (TETAP SAMA) */}
       <AnimatePresence>
         {isOpen && (
           <div className="fixed inset-0 z-[10000] flex items-center justify-center p-4">
