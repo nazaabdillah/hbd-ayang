@@ -10,7 +10,7 @@ interface CountdownProps {
 
 export default function Countdown({ onUnlock, onToggleMusic }: CountdownProps) {
   // SET TANGGAL ULANG TAHUN DI SINI
-  const targetDate = new Date("2024-01-05T00:00:00").getTime();
+  const targetDate = new Date("2026-01-05T00:00:00").getTime();
 
   const [timeLeft, setTimeLeft] = useState({
     days: 0, hours: 0, minutes: 0, seconds: 0,
