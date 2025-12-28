@@ -3,13 +3,11 @@
 import { useState, useRef, useEffect } from "react";
 import Countdown from "@/components/Countdown";
 import { motion, AnimatePresence } from "framer-motion";
-// SATU IMPORT SAJA UNTUK SEMUA ICON
-import { Heart, Stars, User, MessageSquare, Instagram, ChevronLeft, ChevronRight } from "lucide-react"; 
+import { Heart, Stars, User, MessageSquare, Instagram, ChevronLeft, ChevronRight, Loader2 } from "lucide-react"; 
 import Cake from "@/components/Cake"; 
 import { supabase } from "@/lib/supabase";
 
 // --- MOCK DATA FOTO ---
-// Pastikan jumlah foto di couple GANJIL (misal 5, 7) biar tengahnya pas.
 const PHOTOS = {
   childhood: "/images/foto-kecil.jpeg",   
   current: "/images/foto-sekarang.jpg",  
@@ -44,7 +42,7 @@ export default function Home() {
       audioRef.current.play().catch((e) => console.log("Auto-play failed:", e));
     }
 
-    // Preloading simulation 4 detik
+    // Durasi loading 3.5 Detik (Tetap)
     setTimeout(() => {
         setIsLoading(false);
         setIsUnlocked(true);
@@ -57,13 +55,13 @@ export default function Home() {
 
       <AnimatePresence mode="wait">
         {!isUnlocked && !isLoading && (
-          <motion.div key="countdown" exit={{ opacity: 0 }}>
+          <motion.div key="countdown" exit={{ opacity: 0 }} transition={{ duration: 0.5 }}>
              <Countdown onUnlock={handleUnlock} />
           </motion.div>
         )}
 
         {isLoading && (
-           <motion.div key="preloader" exit={{ opacity: 0 }}>
+           <motion.div key="preloader" exit={{ opacity: 0 }} transition={{ duration: 0.5 }}>
               <Preloader />
            </motion.div>
         )}
@@ -80,34 +78,26 @@ export default function Home() {
 }
 
 // ==============================================
-//       KOMPONEN PRELOADER
+//    KOMPONEN PRELOADER (LITE VERSION - NO LAG)
 // ==============================================
 function Preloader() {
-    const [textIndex, setTextIndex] = useState(0);
-    const texts = ["Menyiapkan kenangan...", "Menyalakan lilin...", "Menghias kue...", "Are you ready? ✨"];
-
-    useEffect(() => {
-        const interval = setInterval(() => {
-            setTextIndex((prev) => (prev < texts.length - 1 ? prev + 1 : prev));
-        }, 1000);
-        return () => clearInterval(interval);
-    }, []);
-
     return (
         <div className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-[#050505]">
-            <motion.div animate={{ scale: [1, 1.2, 1] }} transition={{ repeat: Infinity, duration: 0.8 }} className="mb-8">
-                <Heart className="w-16 h-16 text-pink-500 fill-pink-500 blur-sm" />
-            </motion.div>
-            <div className="h-8 overflow-hidden relative">
-                <AnimatePresence mode="wait">
-                    <motion.p key={textIndex} initial={{ y: 20, opacity: 0 }} animate={{ y: 0, opacity: 1 }} exit={{ y: -20, opacity: 0 }} transition={{ duration: 0.5 }} className="text-xl font-handwriting text-pink-200 tracking-widest">
-                        {texts[textIndex]}
-                    </motion.p>
-                </AnimatePresence>
+            {/* Visual: Spinner Simple + Heart */}
+            <div className="relative flex items-center justify-center mb-6">
+                {/* Lingkaran Loading Berputar (CSS Native Animation) */}
+                <div className="w-20 h-20 border-4 border-pink-500/20 border-t-pink-500 rounded-full animate-spin"></div>
+                
+                {/* Icon Hati di Tengah (Diam/Pulse Pelan) */}
+                <div className="absolute inset-0 flex items-center justify-center">
+                    <Heart className="w-8 h-8 text-pink-500 fill-pink-500 animate-pulse" />
+                </div>
             </div>
-            <div className="mt-8 w-48 h-1 bg-gray-800 rounded-full overflow-hidden">
-                <motion.div initial={{ width: "0%" }} animate={{ width: "100%" }} transition={{ duration: 4, ease: "linear" }} className="h-full bg-gradient-to-r from-pink-500 to-purple-500" />
-            </div>
+
+            {/* Teks Informatif Simple */}
+            <p className="text-pink-200 font-handwriting text-lg tracking-widest animate-pulse">
+                Menyiapkan Kejutan...
+            </p>
         </div>
     );
 }
@@ -161,20 +151,17 @@ function JourneyContent() {
                  <div className="scale-125 transform transition-transform duration-500 hover:scale-110 cursor-pointer"><Cake /></div>
             </section>
 
-            {/* 5. COUPLE GALLERY (NEW: HORIZONTAL CAROUSEL STYLE) */}
+            {/* 5. COUPLE GALLERY */}
             <section className="relative z-10 px-4 py-20 w-full overflow-hidden">
                 <div className="text-center mb-16">
                     <span className="text-pink-500 text-sm font-bold tracking-widest uppercase mb-2 block">Chapter: Us</span>
                     <h2 className="text-4xl md:text-5xl font-bold text-white">Life is Better with You</h2>
                     <p className="text-gray-400 mt-4 text-sm md:text-base">Geser atau klik foto untuk melihat kenangan kita.</p>
                 </div>
-                
-                {/* KOMPONEN GALERI BARU */}
                 <GalleryCarousel cards={PHOTOS.couple} />
-
             </section>
 
-            {/* 6. WISH FORM SECTION */}
+            {/* 6. WISH FORM SECTION (AUTO SCROLL) */}
             <WishSection />
 
             {/* 7. FOOTER */}
@@ -201,86 +188,32 @@ function JourneyContent() {
 }
 
 // ==============================================
-//    KOMPONEN GALERI BARU (HORIZONTAL CAROUSEL)
+//    KOMPONEN GALERI
 // ==============================================
 function GalleryCarousel({ cards }: { cards: string[] }) {
-    // Mulai dari tengah
     const [activeIndex, setActiveIndex] = useState(Math.floor(cards.length / 2));
-
     return (
-        // Container dibuat flex center biar gampang ngatur posisi awal
         <div className="relative w-full h-[400px] md:h-[500px] flex items-center justify-center perspective-1000 my-10">
             {cards.map((src, index) => {
-                const offset = index - activeIndex; // Jarak dari tengah (0=tengah, -1=kiri1, 1=kanan1, dst)
+                const offset = index - activeIndex;
                 const isActive = index === activeIndex;
-                
-                // Jarak horizontal antar kartu. Sesuaikan angkanya biar rapat/renggang.
-                // Semakin kecil = semakin numpuk.
-                const spacing = 160; // Coba ubah angka ini kalo kurang pas (misal 140 atau 180)
-
+                const spacing = 160; 
                 return (
-                    <motion.div
-                        key={index}
-                        layout
-                        onClick={() => setActiveIndex(index)}
-                        initial={{ scale: 0.8, opacity: 0 }}
-                        animate={{
-                            // LOGIC BARU: HORIZONTAL LINE
-                            x: offset * spacing, // Geser ke kiri/kanan sejajar
-                            y: 0, // Tetap di garis tengah horizontal (gak melengkung ke bawah)
-                            
-                            // LOGIC SKALA: Tengah Besar, Samping Kecil
-                            scale: isActive ? 1.3 : 1 - Math.abs(offset) * 0.15, // Tengah 1.3x, samping makin kecil
-                            
-                            // LOGIC TUMPUKAN: Tengah paling depan
-                            zIndex: 10 - Math.abs(offset), 
-                            
-                            // LOGIC FOKUS: Samping agak transparan & gelap/blur
-                            opacity: isActive ? 1 : 0.7 - Math.abs(offset) * 0.1,
-                            filter: isActive ? "blur(0px) brightness(100%)" : "blur(1px) brightness(50%) grayscale(30%)"
-                        }}
-                        transition={{ type: "spring", stiffness: 180, damping: 25 }} // Animasi smooth
-                        className={`absolute w-[220px] h-[320px] md:w-[280px] md:h-[400px] rounded-2xl shadow-2xl cursor-pointer overflow-hidden border-2 ${isActive ? "border-pink-500 shadow-[0_0_40px_rgba(236,72,153,0.6)]" : "border-white/10"}`}
-                        style={{ 
-                            // Posisi absolut di tengah container, nanti digeser pake animate x
-                            left: "50%",
-                            marginLeft: -110, // Setengah dari width 220px buat centering CSS
-                            transformOrigin: "center center" // Putar dari tengah
-                        }}
-                    >
-                        <img 
-                            src={src} 
-                            alt="Memory" 
-                            className="w-full h-full object-cover pointer-events-none" 
-                        />
+                    <motion.div key={index} layout onClick={() => setActiveIndex(index)} initial={{ scale: 0.8, opacity: 0 }} animate={{ x: offset * spacing, y: 0, scale: isActive ? 1.3 : 1 - Math.abs(offset) * 0.15, zIndex: 10 - Math.abs(offset), opacity: isActive ? 1 : 0.7 - Math.abs(offset) * 0.1, filter: isActive ? "blur(0px) brightness(100%)" : "blur(1px) brightness(50%) grayscale(30%)" }} transition={{ type: "spring", stiffness: 180, damping: 25 }} className={`absolute w-[220px] h-[320px] md:w-[280px] md:h-[400px] rounded-2xl shadow-2xl cursor-pointer overflow-hidden border-2 ${isActive ? "border-pink-500 shadow-[0_0_40px_rgba(236,72,153,0.6)]" : "border-white/10"}`} style={{ left: "50%", marginLeft: -110, transformOrigin: "center center" }}>
+                        <img src={src} alt="Memory" className="w-full h-full object-cover pointer-events-none" />
                     </motion.div>
                 );
             })}
-
-            {/* Navigasi Manual */}
             <div className="absolute -bottom-16 flex gap-8 z-20">
-                 <button 
-                    onClick={() => setActiveIndex(prev => Math.max(0, prev - 1))}
-                    disabled={activeIndex === 0}
-                    className="p-3 rounded-full bg-white/10 hover:bg-pink-500 disabled:opacity-30 transition-colors border border-white/10"
-                 >
-                    <ChevronLeft size={20} />
-                 </button>
-                 <button 
-                    onClick={() => setActiveIndex(prev => Math.min(cards.length - 1, prev + 1))}
-                    disabled={activeIndex === cards.length - 1}
-                    className="p-3 rounded-full bg-white/10 hover:bg-pink-500 disabled:opacity-30 transition-colors border border-white/10"
-                 >
-                    <ChevronRight size={20} />
-                 </button>
+                 <button onClick={() => setActiveIndex(prev => Math.max(0, prev - 1))} disabled={activeIndex === 0} className="p-3 rounded-full bg-white/10 hover:bg-pink-500 disabled:opacity-30 transition-colors border border-white/10"><ChevronLeft size={20} /></button>
+                 <button onClick={() => setActiveIndex(prev => Math.min(cards.length - 1, prev + 1))} disabled={activeIndex === cards.length - 1} className="p-3 rounded-full bg-white/10 hover:bg-pink-500 disabled:opacity-30 transition-colors border border-white/10"><ChevronRight size={20} /></button>
             </div>
         </div>
     );
 }
 
-
 // ==============================================
-//          DYNAMIC WISH SECTION (SUPABASE)
+//          DYNAMIC WISH SECTION
 // ==============================================
 function WishSection() {
     const [name, setName] = useState("");
@@ -310,6 +243,8 @@ function WishSection() {
         setLoading(false);
     };
 
+    const scrollContent = wishes.length > 0 ? [...wishes, ...wishes] : [];
+
     return (
         <section className="relative z-10 px-4 py-24 max-w-2xl mx-auto">
             <div className="text-center mb-10">
@@ -317,7 +252,8 @@ function WishSection() {
                 <h2 className="text-3xl md:text-5xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-pink-300 via-purple-300 to-indigo-300 mb-4 font-handwriting">Wish Wall</h2>
                 <p className="text-gray-400 text-sm md:text-base max-w-xs mx-auto">Kirimkan ucapan manismu. Pesanmu akan abadi di sini dan dibaca oleh Anis.</p>
             </div>
-            <motion.div initial={{ opacity: 0, y: 50 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} className="relative group mb-16">
+
+            <motion.div initial={{ opacity: 0, y: 50 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} className="relative group mb-20">
                 <div className="absolute -inset-1 bg-gradient-to-r from-pink-600 via-purple-600 to-pink-600 rounded-[2rem] blur opacity-75 group-hover:opacity-100 transition duration-1000 animate-tilt"></div>
                 <div className="relative bg-[#0a0a0a] ring-1 ring-white/10 rounded-[1.9rem] p-8 shadow-2xl">
                     <form onSubmit={handleSend} className="space-y-6">
@@ -341,18 +277,47 @@ function WishSection() {
                     </form>
                 </div>
             </motion.div>
-            <div className="space-y-4 max-h-[600px] overflow-y-auto custom-scrollbar px-2">
-                {wishes.length === 0 ? <p className="text-center text-gray-500 text-sm italic">Belum ada ucapan. Jadilah yang pertama!</p> : wishes.map((wish) => (
-                    <motion.div key={wish.id} initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} className="bg-white/5 border border-white/10 p-5 rounded-2xl backdrop-blur-sm hover:bg-white/10 transition-colors">
-                        <div className="flex items-center gap-3 mb-2">
-                            <div className="w-8 h-8 rounded-full bg-gradient-to-tr from-pink-400 to-purple-400 flex items-center justify-center text-xs font-bold text-white uppercase">{wish.name.charAt(0)}</div>
-                            <div><h4 className="font-bold text-pink-200 text-sm">{wish.name}</h4><p className="text-[10px] text-gray-500">{new Date(wish.created_at).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}</p></div>
-                        </div>
-                        <p className="text-gray-300 text-sm leading-relaxed font-light">"{wish.message}"</p>
+
+            {/* INFINITE SCROLL WISH WALL */}
+            <div className="relative h-[500px] overflow-hidden group">
+                <div className="absolute top-0 left-0 right-0 h-20 bg-gradient-to-b from-[#050505] to-transparent z-10 pointer-events-none"></div>
+                <div className="absolute bottom-0 left-0 right-0 h-20 bg-gradient-to-t from-[#050505] to-transparent z-10 pointer-events-none"></div>
+
+                {wishes.length === 0 ? (
+                    <div className="flex flex-col items-center justify-center h-full text-gray-500 text-sm italic">
+                        <p>Belum ada ucapan. Jadilah yang pertama!</p>
+                    </div>
+                ) : (
+                    <motion.div 
+                        animate={{ y: ["0%", "-50%"] }}
+                        transition={{ repeat: Infinity, ease: "linear", duration: wishes.length * 3 }}
+                        className="flex flex-col gap-4 group-hover:paused"
+                        style={{ cursor: "grab" }}
+                        onMouseEnter={(e) => {}}
+                    >
+                        {scrollContent.map((wish, index) => (
+                            <motion.div key={`${wish.id}-${index}`} className="bg-white/5 border border-white/10 p-5 rounded-2xl backdrop-blur-sm hover:bg-white/10 transition-colors mx-2">
+                                <div className="flex items-center gap-3 mb-2">
+                                    <div className="w-8 h-8 rounded-full bg-gradient-to-tr from-pink-400 to-purple-400 flex items-center justify-center text-xs font-bold text-white uppercase shadow-lg">
+                                        {wish.name.charAt(0)}
+                                    </div>
+                                    <div>
+                                        <h4 className="font-bold text-pink-200 text-sm">{wish.name}</h4>
+                                        <p className="text-[10px] text-gray-500">
+                                            {new Date(wish.created_at).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}
+                                        </p>
+                                    </div>
+                                </div>
+                                <p className="text-gray-300 text-sm leading-relaxed font-light">"{wish.message}"</p>
+                            </motion.div>
+                        ))}
                     </motion.div>
-                ))}
+                )}
             </div>
-            <div className="text-center mt-4"><div className="w-16 h-1 bg-white/10 rounded-full mx-auto"></div></div>
+            
+            <div className="text-center mt-8 text-xs text-gray-600">
+                <p>Scroll or Hover to Pause</p>
+            </div>
         </section>
     );
 }
