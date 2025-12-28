@@ -4,11 +4,12 @@ import { useState, useRef, useEffect } from "react";
 import Countdown from "@/components/Countdown";
 import { motion, AnimatePresence } from "framer-motion";
 // SATU IMPORT SAJA UNTUK SEMUA ICON
-import { Heart, Camera, Stars, Send, User, MessageSquare, Instagram } from "lucide-react"; 
+import { Heart, Stars, User, MessageSquare, Instagram, ChevronLeft, ChevronRight } from "lucide-react"; 
 import Cake from "@/components/Cake"; 
 import { supabase } from "@/lib/supabase";
 
 // --- MOCK DATA FOTO ---
+// Pastikan jumlah foto di couple GANJIL (misal 5, 7) biar tengahnya pas.
 const PHOTOS = {
   childhood: "/images/foto-kecil.jpeg",   
   current: "/images/foto-sekarang.jpg",  
@@ -47,7 +48,7 @@ export default function Home() {
     setTimeout(() => {
         setIsLoading(false);
         setIsUnlocked(true);
-    }, 4000); 
+    }, 3500); 
   };
 
   return (
@@ -160,26 +161,23 @@ function JourneyContent() {
                  <div className="scale-125 transform transition-transform duration-500 hover:scale-110 cursor-pointer"><Cake /></div>
             </section>
 
-            {/* 5. COUPLE GALLERY (BENTO GRID) */}
-            <section className="relative z-10 px-4 py-20 max-w-5xl mx-auto">
-                <div className="text-center mb-12">
+            {/* 5. COUPLE GALLERY (NEW: HORIZONTAL CAROUSEL STYLE) */}
+            <section className="relative z-10 px-4 py-20 w-full overflow-hidden">
+                <div className="text-center mb-16">
                     <span className="text-pink-500 text-sm font-bold tracking-widest uppercase mb-2 block">Chapter: Us</span>
                     <h2 className="text-4xl md:text-5xl font-bold text-white">Life is Better with You</h2>
-                    <p className="text-gray-400 mt-4 text-sm md:text-base">Makasih udah bolehin aku nemenin hari-hari kamu.</p>
+                    <p className="text-gray-400 mt-4 text-sm md:text-base">Geser atau klik foto untuk melihat kenangan kita.</p>
                 </div>
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4 h-[500px] md:h-[600px]">
-                    <BentoItem src={PHOTOS.couple[0]} className="col-span-2 row-span-2" delay={0.1}/>
-                    <BentoItem src={PHOTOS.couple[1]} className="col-span-1 row-span-1" delay={0.2} />
-                    <BentoItem src={PHOTOS.couple[2]} className="col-span-1 row-span-1" delay={0.3} />
-                    <BentoItem src={PHOTOS.couple[3]} className="col-span-1 row-span-1" delay={0.4} />
-                    <BentoItem src={PHOTOS.couple[4]} className="col-span-1 row-span-1" delay={0.5} />
-                </div>
+                
+                {/* KOMPONEN GALERI BARU */}
+                <GalleryCarousel cards={PHOTOS.couple} />
+
             </section>
 
             {/* 6. WISH FORM SECTION */}
             <WishSection />
 
-            {/* 7. FOOTER KEREN (NZAA SIGNATURE) */}
+            {/* 7. FOOTER */}
             <footer className="relative z-10 py-12 border-t border-white/10 bg-black/40 backdrop-blur-md overflow-hidden">
                 <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-64 h-32 bg-pink-600/10 rounded-full blur-[80px] pointer-events-none"></div>
                 <div className="relative max-w-md mx-auto text-center px-6">
@@ -187,7 +185,7 @@ function JourneyContent() {
                     <div className="w-16 h-px bg-gradient-to-r from-transparent via-gray-700 to-transparent mx-auto mb-6"></div>
                     <div className="flex flex-col items-center gap-2">
                         <p className="text-sm text-gray-400 font-light tracking-wide flex items-center justify-center gap-1.5">Built with <span className="text-red-500 animate-pulse text-lg">❤️</span> by</p>
-                        <a href="https://www.instagram.com/___nazaaaqr/" target="_blank" rel="noopener noreferrer" className="group relative inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/5 border border-white/10 hover:bg-white/10 hover:border-pink-500/50 transition-all duration-300">
+                        <a href="https://www.instagram.com/____nazaaaqr/" target="_blank" rel="noopener noreferrer" className="group relative inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/5 border border-white/10 hover:bg-white/10 hover:border-pink-500/50 transition-all duration-300">
                             <div className="w-6 h-6 rounded-full bg-gradient-to-tr from-pink-500 to-purple-500 flex items-center justify-center"><User className="w-3 h-3 text-white" /></div>
                             <span className="text-white font-bold tracking-wide group-hover:text-pink-300 transition-colors">Nzaa</span>
                             <Instagram className="w-4 h-4 text-gray-400 group-hover:text-pink-500 transition-colors" />
@@ -201,6 +199,85 @@ function JourneyContent() {
         </div>
     );
 }
+
+// ==============================================
+//    KOMPONEN GALERI BARU (HORIZONTAL CAROUSEL)
+// ==============================================
+function GalleryCarousel({ cards }: { cards: string[] }) {
+    // Mulai dari tengah
+    const [activeIndex, setActiveIndex] = useState(Math.floor(cards.length / 2));
+
+    return (
+        // Container dibuat flex center biar gampang ngatur posisi awal
+        <div className="relative w-full h-[400px] md:h-[500px] flex items-center justify-center perspective-1000 my-10">
+            {cards.map((src, index) => {
+                const offset = index - activeIndex; // Jarak dari tengah (0=tengah, -1=kiri1, 1=kanan1, dst)
+                const isActive = index === activeIndex;
+                
+                // Jarak horizontal antar kartu. Sesuaikan angkanya biar rapat/renggang.
+                // Semakin kecil = semakin numpuk.
+                const spacing = 160; // Coba ubah angka ini kalo kurang pas (misal 140 atau 180)
+
+                return (
+                    <motion.div
+                        key={index}
+                        layout
+                        onClick={() => setActiveIndex(index)}
+                        initial={{ scale: 0.8, opacity: 0 }}
+                        animate={{
+                            // LOGIC BARU: HORIZONTAL LINE
+                            x: offset * spacing, // Geser ke kiri/kanan sejajar
+                            y: 0, // Tetap di garis tengah horizontal (gak melengkung ke bawah)
+                            
+                            // LOGIC SKALA: Tengah Besar, Samping Kecil
+                            scale: isActive ? 1.3 : 1 - Math.abs(offset) * 0.15, // Tengah 1.3x, samping makin kecil
+                            
+                            // LOGIC TUMPUKAN: Tengah paling depan
+                            zIndex: 10 - Math.abs(offset), 
+                            
+                            // LOGIC FOKUS: Samping agak transparan & gelap/blur
+                            opacity: isActive ? 1 : 0.7 - Math.abs(offset) * 0.1,
+                            filter: isActive ? "blur(0px) brightness(100%)" : "blur(1px) brightness(50%) grayscale(30%)"
+                        }}
+                        transition={{ type: "spring", stiffness: 180, damping: 25 }} // Animasi smooth
+                        className={`absolute w-[220px] h-[320px] md:w-[280px] md:h-[400px] rounded-2xl shadow-2xl cursor-pointer overflow-hidden border-2 ${isActive ? "border-pink-500 shadow-[0_0_40px_rgba(236,72,153,0.6)]" : "border-white/10"}`}
+                        style={{ 
+                            // Posisi absolut di tengah container, nanti digeser pake animate x
+                            left: "50%",
+                            marginLeft: -110, // Setengah dari width 220px buat centering CSS
+                            transformOrigin: "center center" // Putar dari tengah
+                        }}
+                    >
+                        <img 
+                            src={src} 
+                            alt="Memory" 
+                            className="w-full h-full object-cover pointer-events-none" 
+                        />
+                    </motion.div>
+                );
+            })}
+
+            {/* Navigasi Manual */}
+            <div className="absolute -bottom-16 flex gap-8 z-20">
+                 <button 
+                    onClick={() => setActiveIndex(prev => Math.max(0, prev - 1))}
+                    disabled={activeIndex === 0}
+                    className="p-3 rounded-full bg-white/10 hover:bg-pink-500 disabled:opacity-30 transition-colors border border-white/10"
+                 >
+                    <ChevronLeft size={20} />
+                 </button>
+                 <button 
+                    onClick={() => setActiveIndex(prev => Math.min(cards.length - 1, prev + 1))}
+                    disabled={activeIndex === cards.length - 1}
+                    className="p-3 rounded-full bg-white/10 hover:bg-pink-500 disabled:opacity-30 transition-colors border border-white/10"
+                 >
+                    <ChevronRight size={20} />
+                 </button>
+            </div>
+        </div>
+    );
+}
+
 
 // ==============================================
 //          DYNAMIC WISH SECTION (SUPABASE)
@@ -311,15 +388,6 @@ function TextBox({ children, title, align = "left" }: { children: React.ReactNod
             <div className="p-6 rounded-2xl bg-white/5 border border-white/10 backdrop-blur-md shadow-xl hover:bg-white/10 transition-colors duration-500"><div className="text-gray-300 leading-loose font-light text-lg">{children}</div></div>
         </motion.div>
     );
-}
-
-function BentoItem({ src, className, delay }: { src: string, className?: string, delay: number }) {
-    return (
-        <motion.div initial={{ opacity: 0, scale: 0.9 }} whileInView={{ opacity: 1, scale: 1 }} viewport={{ once: true, margin: "-50px" }} transition={{ duration: 0.5, delay: delay }} className={`relative rounded-2xl overflow-hidden border border-white/10 group ${className}`}>
-            <img src={src || "/images/kita1.jpg"} alt="Memory" className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" />
-            <div className="absolute inset-0 bg-black/20 group-hover:bg-transparent transition-colors duration-300"></div>
-        </motion.div>
-    )
 }
 
 function GlowingHearts() {
