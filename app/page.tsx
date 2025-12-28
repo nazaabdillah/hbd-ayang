@@ -58,7 +58,7 @@ export default function Home() {
       <AnimatePresence mode="wait">
         {!isUnlocked && !isLoading && (
           <motion.div key="countdown" exit={{ opacity: 0 }}>
-             <Countdown onUnlock={handleUnlock} onToggleMusic={toggleMusic} />
+             <Countdown onUnlock={handleUnlock} />
           </motion.div>
         )}
 
